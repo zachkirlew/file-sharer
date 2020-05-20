@@ -1,6 +1,7 @@
-package filesharer
+package filesharer.upload
 
 import cats.effect.IO
+import filesharer.FileSharerRoutes
 import org.http4s._
 import org.http4s.implicits._
 import org.specs2.matcher.MatchResult

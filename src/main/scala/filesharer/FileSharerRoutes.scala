@@ -2,6 +2,7 @@ package filesharer
 
 import cats.effect.Sync
 import cats.implicits._
+import filesharer.upload.{Filename, UploadFile}
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
 
@@ -13,9 +14,10 @@ object FileSharerRoutes {
     HttpRoutes.of[F] {
       case GET -> Root / "upload" / filename =>
         for {
-          message <- U.upload(UploadFile.Filename(filename))
+          message <- U.upload(Filename(filename))
           resp    <- Ok(message)
         } yield resp
     }
   }
+
 }

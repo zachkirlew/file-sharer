@@ -1,6 +1,7 @@
 package filesharer
 
 import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, Timer}
+import filesharer.upload.UploadFile
 import fs2.Stream
 import org.http4s.implicits._
 import org.http4s.server.blaze.BlazeServerBuilder
@@ -13,14 +14,9 @@ object FileSharerServer {
       C: ContextShift[F]
   ): Stream[F, ExitCode] = {
 
-    // Combine Service Routes into an HttpApp.
-    // Can also be done via a Router if you
-    // want to extract a segments not checked
-    // in the underlying routes.
     val httpApp =
       FileSharerRoutes.uploadRoutes[F](UploadFile.impl[F]).orNotFound
 
-    // With Middlewares in place
     val finalHttpApp =
       Logger.httpApp(logHeaders = true, logBody = true)(httpApp)
 
@@ -29,4 +25,5 @@ object FileSharerServer {
       .withHttpApp(finalHttpApp)
       .serve
   }
+
 }
