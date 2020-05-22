@@ -1,12 +1,21 @@
 package filesharer.upload
 
-import cats.effect.IO
+import java.io.{File, FileInputStream}
+
+import cats.effect.{Blocker, ContextShift, IO, Resource}
 import filesharer.FileSharerRoutes
 import org.http4s._
+import org.http4s.headers.`Content-Type`
 import org.http4s.implicits._
 import org.specs2.matcher.MatchResult
+import fs2._
+import org.http4s.multipart.{Multipart, Part}
+
+import scala.concurrent.ExecutionContext
 
 class UploadFileSpec extends org.specs2.mutable.Specification {
+  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val blocker: Blocker     = Blocker.liftExecutionContext(ExecutionContext.global)
 
   "UploadFile" >> {
     "return 200" >> {
@@ -17,20 +26,27 @@ class UploadFileSpec extends org.specs2.mutable.Specification {
     }
   }
 
-  private[this] val retHelloWorld: Response[IO] = {
-    val getHW      = Request[IO](Method.GET, uri"/upload/file")
+  private[this] def retUploadingFileMessage: Response[IO] = {
+    val file = new File(getClass.getResource("/ball.png").toURI)
+    val field = Part
+      .fileData[IO]("file", file, blocker, `Content-Type`(MediaType.image.png))
+    val multipart = Multipart[IO](Vector(field))
+    val entity    = EntityEncoder[IO, Multipart[IO]].toEntity(multipart)
+    val body      = entity.body
+    val postUpload =
+      Request[IO](method = Method.POST, uri = uri"/upload", body = body, headers = multipart.headers)
     val uploadFile = UploadFile.impl[IO]
     FileSharerRoutes
       .uploadRoutes(uploadFile)
-      .orNotFound(getHW)
+      .orNotFound(postUpload)
       .unsafeRunSync()
   }
 
   private[this] def uriReturns200(): MatchResult[Status] =
-    retHelloWorld.status must beEqualTo(Status.Ok)
+    retUploadingFileMessage.status must beEqualTo(Status.Ok)
 
   private[this] def uriReturnsUploadingFile(): MatchResult[String] =
-    retHelloWorld.as[String].unsafeRunSync() must beEqualTo(
-      "{\"message\":\"Uploading file\"}"
+    retUploadingFileMessage.as[String].unsafeRunSync() must beEqualTo(
+      "{\"message\":\"Uploading ball.png\"}"
     )
 }

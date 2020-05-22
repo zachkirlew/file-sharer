@@ -9,6 +9,8 @@ import org.http4s.server.middleware.Logger
 
 object FileSharerServer {
 
+  private val HttpHost = "0.0.0.0"
+
   def stream[F[_]: ConcurrentEffect](
       implicit T: Timer[F],
       C: ContextShift[F]
@@ -21,7 +23,7 @@ object FileSharerServer {
       Logger.httpApp(logHeaders = true, logBody = true)(httpApp)
 
     BlazeServerBuilder[F]
-      .bindHttp(8080, "0.0.0.0")
+      .bindHttp(8080, HttpHost)
       .withHttpApp(finalHttpApp)
       .serve
   }
