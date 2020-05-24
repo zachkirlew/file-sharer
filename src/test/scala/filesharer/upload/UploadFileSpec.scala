@@ -54,5 +54,5 @@ class UploadFileSpec extends org.specs2.mutable.Specification with AfterAll {
 object UploadFileSpec {
   private val TestFile     = "ball.png"
   private val TempDir      = "tmp"
-  private val TestFilePath = s"$TempDir/$TestFile"
+  private val TestFilePath = s"$TempDir/file-sharer-uploads/$TestFile"
 }
