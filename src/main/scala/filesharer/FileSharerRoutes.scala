@@ -2,7 +2,7 @@ package filesharer
 
 import cats.effect.Sync
 import cats.implicits._
-import filesharer.upload.{Filename, UploadFile}
+import filesharer.upload.UploadFile
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
 import org.http4s.multipart.Multipart
@@ -20,8 +20,8 @@ object FileSharerRoutes {
               case None => BadRequest(s"Not file")
               case Some(part) =>
                 for {
-                  message <- U.upload(Filename(part.filename.getOrElse("unknown file")))
-                  resp    <- Ok(message)
+                  _    <- U.upload(part)
+                  resp <- Created()
                 } yield resp
             }
           }
