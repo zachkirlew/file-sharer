@@ -1,11 +1,11 @@
 package filesharer
 
-import java.nio.file.Paths
 import java.util.concurrent.Executors
 
 import blobstore.Store
-import blobstore.fs.FileStore
-import cats.effect.{Blocker, ConcurrentEffect, ContextShift, ExitCode, IO, Timer}
+import blobstore.gcs.GcsStore
+import cats.effect.{Blocker, ConcurrentEffect, ContextShift, ExitCode, Timer}
+import com.google.cloud.storage.{Storage, StorageOptions}
 import filesharer.upload.UploadFile
 import fs2.Stream
 import org.http4s.implicits._
@@ -24,8 +24,12 @@ object FileSharerServer {
   ): Stream[F, ExitCode] = {
 
     val blocker: Blocker =
-      Blocker.liftExecutionContext(ExecutionContext.fromExecutor(Executors.newCachedThreadPool()))
-    implicit val store: Store[F] = new FileStore[F](Paths.get("tmp/"), blocker)
+      Blocker.liftExecutionContext(
+        ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+      )
+
+    val storage: Storage         = StorageOptions.getDefaultInstance.getService
+    implicit val store: Store[F] = GcsStore(storage, blocker, List.empty)
 
     val httpApp =
       FileSharerRoutes.uploadRoutes[F](UploadFile.impl[F]).orNotFound
