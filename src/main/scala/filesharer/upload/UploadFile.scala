@@ -1,8 +1,10 @@
 package filesharer.upload
 
 import blobstore.{Path, Store}
-import cats.Applicative
 import cats.effect.Sync
+import cats.syntax.flatMap._
+import cats.syntax.functor._
+import filesharer.filename.FilenameGenerator
 import org.http4s.multipart.Part
 
 trait UploadFile[F[_]] {
@@ -13,13 +15,16 @@ object UploadFile {
 
   private val StorePath = "file-sharer-uploads/"
 
-  implicit def apply[F[_]](implicit ev: UploadFile[F]): UploadFile[F] = ev
+  def impl[F[_]: Sync](implicit store: Store[F], generator: FilenameGenerator[F]): UploadFile[F] =
+    new UploadFile[F] {
 
-  def impl[F[_]: Applicative: Sync](implicit store: Store[F]): UploadFile[F] = new UploadFile[F] {
-    def upload(part: Part[F]): F[Unit] = {
-      val path = StorePath.concat(part.filename.getOrElse("file"))
-      part.body.through(store.put(Path(path))).compile.drain
+      def upload(part: Part[F]): F[Unit] = {
+        generator
+          .generate(part.filename.getOrElse(""))
+          .map(StorePath.concat)
+          .flatMap(
+            path => part.body.through(store.put(Path(path))).compile.drain
+          )
+      }
     }
-  }
-
 }

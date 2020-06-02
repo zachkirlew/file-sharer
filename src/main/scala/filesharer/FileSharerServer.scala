@@ -6,6 +6,7 @@ import blobstore.Store
 import blobstore.gcs.GcsStore
 import cats.effect.{Blocker, ConcurrentEffect, ContextShift, ExitCode, Timer}
 import com.google.cloud.storage.{Storage, StorageOptions}
+import filesharer.filename.FilenameGenerator
 import filesharer.upload.UploadFile
 import fs2.Stream
 import org.http4s.implicits._
@@ -30,6 +31,8 @@ object FileSharerServer {
 
     val storage: Storage         = StorageOptions.getDefaultInstance.getService
     implicit val store: Store[F] = GcsStore(storage, blocker, List.empty)
+    implicit val filenameGenerator: FilenameGenerator[F] =
+      FilenameGenerator.impl
 
     val httpApp =
       FileSharerRoutes.uploadRoutes[F](UploadFile.impl[F]).orNotFound

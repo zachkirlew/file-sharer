@@ -7,22 +7,29 @@ import blobstore.Store
 import blobstore.fs.FileStore
 import cats.effect.{Blocker, ContextShift, IO}
 import filesharer.FileSharerRoutes
+import filesharer.filename.FilenameGenerator
 import org.http4s._
 import org.http4s.headers.`Content-Type`
 import org.http4s.implicits._
 import org.http4s.multipart.{Multipart, Part}
+import org.specs2.mutable.Specification
 import org.specs2.specification.AfterAll
 
 import scala.concurrent.ExecutionContext
 
-class UploadFileSpec extends org.specs2.mutable.Specification with AfterAll {
+class UploadFileSpec extends Specification with AfterAll {
 
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val blocker: Blocker     = Blocker.liftExecutionContext(ExecutionContext.global)
-  implicit val store: Store[IO]     = new FileStore[IO](Paths.get(UploadFileSpec.TempDir), blocker)
+  implicit val blocker: Blocker =
+    Blocker.liftExecutionContext(ExecutionContext.global)
+  implicit val store: Store[IO] =
+    new FileStore[IO](Paths.get(UploadFileSpec.TempDir), blocker)
+  implicit val filenameGenerator: FilenameGenerator[IO] =
+    (_: String) => IO.pure(UploadFileSpec.TestFile)
 
   override def afterAll(): Unit = {
     new File(UploadFileSpec.TestFilePath).delete()
+    new File(UploadFileSpec.TestBucket).delete()
     new File(UploadFileSpec.TempDir).delete()
   }
 
@@ -34,14 +41,21 @@ class UploadFileSpec extends org.specs2.mutable.Specification with AfterAll {
   }
 
   private[this] def uploadFileResponse: Response[IO] = {
-    val file = new File(getClass.getResource(s"/${UploadFileSpec.TestFile}").toURI)
+    val file = new File(
+      getClass.getResource(s"/${UploadFileSpec.TestFile}").toURI
+    )
     val field = Part
       .fileData[IO]("file", file, blocker, `Content-Type`(MediaType.image.png))
     val multipart = Multipart[IO](Vector(field))
-    val entity    = EntityEncoder[IO, Multipart[IO]].toEntity(multipart)
-    val body      = entity.body
+    val entity = EntityEncoder[IO, Multipart[IO]].toEntity(multipart)
+    val body = entity.body
     val postUpload =
-      Request[IO](method = Method.POST, uri = uri"/upload", body = body, headers = multipart.headers)
+      Request[IO](
+        method = Method.POST,
+        uri = uri"/upload",
+        body = body,
+        headers = multipart.headers
+      )
     val uploadFile = UploadFile.impl[IO]
     FileSharerRoutes
       .uploadRoutes(uploadFile)
@@ -52,7 +66,8 @@ class UploadFileSpec extends org.specs2.mutable.Specification with AfterAll {
 }
 
 object UploadFileSpec {
-  private val TestFile     = "ball.png"
-  private val TempDir      = "tmp"
-  private val TestFilePath = s"$TempDir/file-sharer-uploads/$TestFile"
+  private val TestFile = "ball.png"
+  private val TempDir = "tmp"
+  private val TestBucket = s"$TempDir/file-sharer-uploads"
+  private val TestFilePath = s"$TestBucket/$TestFile"
 }
