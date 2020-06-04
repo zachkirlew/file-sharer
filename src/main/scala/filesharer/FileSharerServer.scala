@@ -6,6 +6,7 @@ import blobstore.Store
 import blobstore.gcs.GcsStore
 import cats.effect.{Blocker, ConcurrentEffect, ContextShift, ExitCode, Timer}
 import com.google.cloud.storage.{Storage, StorageOptions}
+import filesharer.config.ConfigLoader
 import filesharer.filename.FilenameGenerator
 import filesharer.upload.UploadFile
 import fs2.Stream
@@ -16,8 +17,6 @@ import org.http4s.server.middleware.Logger
 import scala.concurrent.ExecutionContext
 
 object FileSharerServer {
-
-  private val HttpHost = "0.0.0.0"
 
   def stream[F[_]: ConcurrentEffect](
       implicit T: Timer[F],
@@ -40,10 +39,13 @@ object FileSharerServer {
     val finalHttpApp =
       Logger.httpApp(logHeaders = true, logBody = true)(httpApp)
 
-    BlazeServerBuilder[F]
-      .bindHttp(8080, HttpHost)
-      .withHttpApp(finalHttpApp)
-      .serve
+    for {
+      config <- Stream.eval(ConfigLoader.impl[F].load())
+      exitCode <- BlazeServerBuilder[F]
+                   .bindHttp(config.server.port, config.server.host)
+                   .withHttpApp(finalHttpApp)
+                   .serve
+    } yield exitCode
   }
 
 }

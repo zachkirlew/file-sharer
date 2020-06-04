@@ -3,6 +3,7 @@ val CirceVersion        = "0.13.0"
 val Specs2Version       = "4.9.3"
 val LogbackVersion      = "1.2.3"
 val Fs2BlobstoreVersion = "0.7.2"
+val PureconfigVersion   = "0.12.3"
 
 lazy val root = (project in file("."))
   .settings(
@@ -19,7 +20,8 @@ lazy val root = (project in file("."))
       "org.specs2"               %% "specs2-core"         % Specs2Version % "test",
       "ch.qos.logback"           % "logback-classic"      % LogbackVersion,
       "com.github.fs2-blobstore" %% "core"                % Fs2BlobstoreVersion,
-      "com.github.fs2-blobstore" %% "gcs"                 % Fs2BlobstoreVersion
+      "com.github.fs2-blobstore" %% "gcs"                 % Fs2BlobstoreVersion,
+      "com.github.pureconfig"    %% "pureconfig"          % PureconfigVersion
     ),
     addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.10.3"),
     addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1")
