@@ -1,2 +1,2 @@
 # file-sharer
-Web service that uploads/downloads files from storage
+Web service that uploads files to storage
